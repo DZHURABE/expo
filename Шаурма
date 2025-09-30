@@ -1,0 +1,86 @@
+npx create-expo-app ShaurmaApp
+cd ShaurmaApp
+npm install @react-navigation/native @react-navigation/native-stack react-native-gesture-handler react-native-reanimated react-native-screens react-native-safe-area-context react-native-vector-icons
+import React, { useState } from 'react';
+import { View, Text, Button, FlatList, StyleSheet, Alert } from 'react-native';
+
+export default function App() {
+  const [cart, setCart] = useState([]);
+  const [total, setTotal] = useState(0);
+
+  const menu = [
+    { id: '1', name: 'Шаурма Классик', price: 500 },
+    { id: '2', name: 'Шаурма BBQ', price: 600 },
+    { id: '3', name: 'Шаурма Чиз', price: 650 },
+  ];
+
+  const addToCart = (item) => {
+    setCart([...cart, item]);
+    setTotal(total + item.price);
+  };
+
+  const goToPayment = () => {
+    // Бу ерда сервер орқали онлайн тўлов API интеграцияси қиласиз
+    fetch('https://your-server.com/create-order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ amount: total })
+    })
+    .then(res => res.json())
+    .then(data => {
+      Alert.alert('Тўловга ўтиш', `Сиз ${total}₽ тўлайсиз. Платёж URL: ${data.payment_url}`);
+      // Бу ерда Linking.openURL(data.payment_url) билан мобил браузерга йўналтириш мумкин
+    });
+  };
+
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>Меню</Text>
+      <FlatList
+        data={menu}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <View style={styles.menuItem}>
+            <Text>{item.name} - {item.price}₽</Text>
+            <Button title="Саватга қўшиш" onPress={() => addToCart(item)} />
+          </View>
+        )}
+      />
+      <Text style={styles.title}>Сават</Text>
+      <FlatList
+        data={cart}
+        keyExtractor={(item, index) => index.toString()}
+        renderItem={({ item }) => (
+          <Text>{item.name} - {item.price}₽</Text>
+        )}
+      />
+      <Text style={styles.total}>Жами: {total}₽</Text>
+      {total > 0 && <Button title="Тўловга ўтиш" onPress={goToPayment} />}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, padding: 20 },
+  title: { fontSize: 20, fontWeight: 'bold', marginVertical: 10 },
+  menuItem: { flexDirection: 'row', justifyContent: 'space-between', marginVertical: 5 },
+  total: { fontSize: 18, fontWeight: 'bold', marginVertical: 10 },
+});
+const express = require('express');
+const cors = require('cors');
+const bodyParser = require('body-parser');
+
+const app = express();
+app.use(cors());
+app.use(bodyParser.json());
+
+app.post('/create-order', (req, res) => {
+  const { amount } = req.body;
+
+  // ЮKassa ёки Tinkoff Kassa API орқали order яратиш коди
+  const payment_url = 'https://payment-gateway.com/checkout?amount=' + amount;
+
+  res.json({ payment_url });
+});
+
+app.listen(3000, () => console.log('Server running on port 3000'));
